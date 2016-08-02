@@ -3,7 +3,7 @@
 import numpy as np
 import os
 import soundfile as sf
-from features import mfcc
+from python_speech_features import mfcc
 import pickle
 import sys
 import theano
@@ -122,7 +122,7 @@ def get_TIMIT_targets_as_alphabet_indices(rootdir = TIMIT_main_dir):
 
 def index2char_TIMIT(input_index_seq = None, TIMIT_pkl_file = os.path.join(os.getcwd(),'TIMIT_data_prepared_for_CTC.pkl')):
 	with open(TIMIT_pkl_file,'rb') as f:
-		data = pickle.load(f)
+		data = pickle.load(f,encoding='latin1')
 		list_of_alphabets = data['chars']
 	blank_char = '_'
 	list_of_alphabets.append(blank_char)
@@ -135,7 +135,7 @@ def index2char_TIMIT(input_index_seq = None, TIMIT_pkl_file = os.path.join(os.ge
 
 def create_mask(TIMIT_pkl_file = os.path.join(os.getcwd(),'TIMIT_data_prepared_for_CLM.pkl')):
 	with open(TIMIT_pkl_file,'rb') as f:
-		data = pickle.load(f)
+		data = pickle.load(f,encoding='latin1')
 	x = data['x']
 	max_seq_len = max([len(x[i]) for i in range(len(x))])
 	mask = np.zeros((len(x),max_seq_len))
