@@ -1,5 +1,3 @@
-import pickle as pkl
-import numpy as np
 import theano
 import theano.tensor as T
 import lasagne 
@@ -23,10 +21,6 @@ from TIMIT_utils import *
 '''TODO: Some Hard coded stuff '''
 
 CLM_LEN = 78
-TIMIT_pkl_file = os.path.join(os.getcwd(),'TIMIT_data_prepared_for_CTC.pkl')
-with open(TIMIT_pkl_file,'rb') as f:
-		data = pickle.load(f,encoding='latin1')
-		list_of_alphabets = data['chars']
 def wav_to_input( wav_file_name ):
 	input_data, f_s = sf.read(wav_file_name)
 	# mfcc_feat = MFCC_input(mfcc(input_data,f_s))
@@ -79,7 +73,7 @@ def decode( input_data ):
 	p_b = {}
 	p_nb = {}
 	p_tot = {}
-	alpha = 1
+	alpha = 2.5
 	k = 10
 	p_ctc=[]
 	for i in range(len(input_data)):
@@ -93,9 +87,9 @@ def decode( input_data ):
 	p_nb["_"] = 0
 	p_tot["_"] = 1
 	z_prev = ["_"]
-	print(len(input_data))
+	print("Number of frames:"+str(len(input_data)))
 	for t in range(len(input_data)):
-		print(t)
+		print(str(t)+"/"+str(len(input_data))+" done")
 		z_next = []
 		p_b_next={}
 		p_nb_next = {}
@@ -190,12 +184,15 @@ def getTrainedCLM():
 
 
 #def getCLMOneHot( sequence ):
-
+TIMIT_pkl_file = os.path.join(os.getcwd(),'TIMIT_data_prepared_for_CTC.pkl')
+with open(TIMIT_pkl_file,'rb') as f:
+		data = pickle.load(f,encoding='latin1')
+		list_of_alphabets = data['chars']
 RNN_in, BiRNN = getTrainedRNN()
 CLM_in, CLM_mask, CLM = getTrainedCLM()
-
-#input_data = wav_to_input('/home/daivik/Downloads/fsew0_v1.1/fsew0_001.wav')
-input_data = data['x'][1];
+#input_data = wav_to_input('/home/daivik/Downloads/fsew0_v1.1/fsew0_007.wav')
+input_data = data['x'][0];
 pred = BiRNN.eval({RNN_in.input_var: [input_data]})
 print(decode(pred[0]))
+print("Argmax Result:")
 print(index2char_TIMIT(np.argmax(pred, axis = 2)[0]))
