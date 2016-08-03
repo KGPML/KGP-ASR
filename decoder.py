@@ -12,7 +12,7 @@ import heapq
 import numpy as np
 import os
 import soundfile as sf
-from python_speech_features import mfcc
+from features import mfcc
 import pickle
 import sys
 import theano
@@ -73,8 +73,9 @@ def decode( input_data ):
 	p_b = {}
 	p_nb = {}
 	p_tot = {}
-	alpha = 2.5
-	k = 10
+	alpha = 1.25
+	beta = 1.5
+	k = 20
 	p_ctc=[]
 	for i in range(len(input_data)):
 		dic = {}
@@ -108,11 +109,13 @@ def decode( input_data ):
 					p_b_next[new_string] = 0
 				z_next.append(new_string)
 		p_tot = {}
+		plen = {}
 		for string in z_next:
 			p_tot[string] = p_b_next[string] + p_nb_next[string]
+			plen[string] = p_tot[string]*(len(string)**beta)
 		p_b = p_b_next
 		p_nb = p_nb_next
-		z_prev = sorted(p_tot, key=p_tot.get)[-k:]#get max k keys
+		z_prev = sorted(plen, key=plen.get)[-k:]#get max k keys
 	d=[]
 	for i in z_prev:
 		d.append((p_b[i]+p_nb[i]))
@@ -145,7 +148,7 @@ def getTrainedRNN():
 	l_out_softmax_reshaped = ReshapeLayer(l_out_softmax, (n_batch, n_time_steps, output_size))
 
 
-	with np.load('first_working_CTC_model.npz') as f:
+	with np.load('CTC_model.npz') as f:
 		param_values = [f['arr_%d' % i] for i in range(len(f.files))]
 	lasagne.layers.set_all_param_values(l_out_softmax_reshaped, param_values, trainable = True)
 	output = lasagne.layers.get_output( l_out_softmax_reshaped )
@@ -186,13 +189,15 @@ def getTrainedCLM():
 #def getCLMOneHot( sequence ):
 TIMIT_pkl_file = os.path.join(os.getcwd(),'TIMIT_data_prepared_for_CTC.pkl')
 with open(TIMIT_pkl_file,'rb') as f:
-		data = pickle.load(f,encoding='latin1')
+		data = pickle.load(f)
 		list_of_alphabets = data['chars']
 RNN_in, BiRNN = getTrainedRNN()
 CLM_in, CLM_mask, CLM = getTrainedCLM()
 #input_data = wav_to_input('/home/daivik/Downloads/fsew0_v1.1/fsew0_007.wav')
-input_data = data['x'][0];
+test_sample = int(sys.argv[1])
+input_data = data['x'][test_sample];
 pred = BiRNN.eval({RNN_in.input_var: [input_data]})
 print(decode(pred[0]))
 print("Argmax Result:")
 print(index2char_TIMIT(np.argmax(pred, axis = 2)[0]))
+print(data['y_char'][test_sample])
